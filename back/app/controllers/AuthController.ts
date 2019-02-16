@@ -14,16 +14,16 @@ class AuthController {
     }
 
     isValidToken(token : string | undefined) : Promise<boolean> {
-        return new Promise<boolean>((resolve, reject) => {
+        return new Promise<boolean>((resolve) => {
             if(token != undefined){
                 jwt.verify(token, this.key, err => {
                     if(err) {
                         console.log(err);
-                        reject(false);
+                        resolve(false);
                     }
                     else resolve(true);
                 })
-            } else reject(false);
+            } else resolve(false);
         });
     }
 
