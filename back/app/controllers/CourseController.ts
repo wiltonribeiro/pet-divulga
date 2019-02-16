@@ -1,38 +1,38 @@
-import Course from "../models/Course";
+import Course, {ICourse} from "../models/Course";
 import database from "../config/Database";
-import {IStudent} from "../models/Student";
-
-const mongoose = require("mongoose");
+import Error from "../models/ErrorCode";
 
 class CourseController {
 
-    async getCourse() : Promise<IStudent>{
+    async getCourse() : Promise<ICourse>{
 
         let result :boolean = await database.connect();
-        return new Promise<any>( (res) => {
-            if(result == false) res(null);
+        if(!result) throw new Error(500,"Falha ao conectar-se com o banco de dados");
 
-            Course.find((err, data : IStudent) => {
+        return new Promise<any>((res) => {
+            Course.find( async (err, data : ICourse) => {
                 if(err){
                     console.log(err);
-                    res(null);
-                } else res(data);
+                    throw new Error(500,err);
+                } else{
+                    await database.disconnect();
+                    res(data);
+                }
             });
-
         });
     }
 
     async saveCourse(body: any) : Promise<boolean>{
 
         let result :boolean = await database.connect();
-        return new Promise<boolean>((res)=>{
+        if(!result) throw new Error(500,"Falha ao conectar-se com o banco de dados");
 
-            if(result == false) res(false);
+        return new Promise<boolean>(async (res)=>{
 
-            new Course(body).save(async err => {
+            await new Course(body).save(async err => {
                 if(err){
                     console.log(err);
-                    res(false);
+                    throw new Error(500,err);
                 }
                 else{
                     await database.disconnect();
