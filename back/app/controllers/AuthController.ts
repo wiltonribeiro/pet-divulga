@@ -29,7 +29,6 @@ class AuthController {
 
     private jwtOptions() {
         return {
-            expiresIn:  "12h",
             algorithm:  "HS256"
         };
     }

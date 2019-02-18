@@ -2,7 +2,6 @@ import Route from "../models/Route";
 import courseController from "../controllers/CourseController";
 import e = require("express");
 import authController from "../controllers/AuthController";
-import Error from '../models/ErrorCode';
 
 class CourseRoute implements Route{
 
@@ -18,12 +17,10 @@ class CourseRoute implements Route{
                     let data = await courseController.getCourse();
                     res.send(data);
                 }catch (e) {
-                    if(e instanceof Error){
-                        res.sendStatus(e.code);
-                        res.send(e);
-                    }
+                    res.status(e.code).send({"message":e.message});
                 }
-            } else res.sendStatus(403);
+            } else
+                res.sendStatus(403);
 
         });
 
@@ -37,14 +34,10 @@ class CourseRoute implements Route{
                     await courseController.saveCourse(req.body);
                     res.sendStatus(200);
                 }catch (e) {
-                    if(e instanceof Error){
-                        res.sendStatus(e.code);
-                        res.send(e);
-                    }
+                    res.status(e.code).send({"message":e.message});
                 }
-            }else {
+            } else
                 res.sendStatus(403);
-            }
 
         });
 

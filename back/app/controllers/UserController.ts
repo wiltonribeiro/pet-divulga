@@ -1,7 +1,6 @@
-import User from "../models/User";
+import User, {IUser} from "../models/User";
 import Student, {IStudent} from "../models/Student";
 import Database from "../config/Database";
-import mongoose = require('mongoose');
 import Error from '../models/ErrorCode';
 class UserController {
 
@@ -27,39 +26,52 @@ class UserController {
         let result :boolean = await Database.connect();
         if (!result)  throw new Error(500,"Falha ao conectar-se com o banco de dados");
 
-        switch (type){
-            case "student":{
-                let result = await this.loginStudent(body.email, body.password);
-                await Database.disconnect();
-                return result;
-            }
-            default:{
-                throw new Error(400,"Tipo de usuário inexistente");
-            }
-        }
+        let email = body.email;
+        let password = body.password;
 
-    }
+        return new Promise<any>((resolve, reject) => {
 
-    private async loginStudent(email :string, password :string) : Promise<any> {
-        return new Promise<any>( async (response) =>{
-            Student.findOne({email: email, password: password}, (err, res) => {
-                if(res == null || err) throw new Error(401, "Usuário não encontrado");
-                else{
-                    response(res);
+            User.findOne({email: email, password: password}).lean().exec(async (err, userData) => {
+
+                let json :any = null;
+
+                if(userData == null || err) reject(new Error(401, "Usuário não encontrado"));
+                else {
+                    switch (type){
+                        case "student":{
+                            let studentData = await this.loginStudent(userData._id).catch(err1 => reject(err1));
+                            json = Object.assign({},userData,studentData);
+                            break;
+                        }
+                        default:{
+                            reject(new Error(400,"Tipo de usuário inexistente"));
+                        }
+                    }
+                    await Database.disconnect();
+                    resolve(json);
                 }
             });
         });
     }
 
-    private registerStudent(body :any) : Promise<boolean> {
-        let user = new User();
-        Student.schema.add(UserController.userDataSchema().obj);
+    private async loginStudent(_id: any) : Promise<IUser> {
+        return new Promise<any>( (resolve, reject) => {
+            Student.findById(_id).populate('course_id').lean().exec((_, studentData) => {
+                if(studentData == null) reject(new Error(401, 'Tipo de usuário inconssitente ao solicitado'));
+                resolve(studentData);
+            });
+        });
+    }
 
-        let student = new Student(body);
+    private registerStudent(body :any) : Promise<boolean> {
+        let user = new User(body);
+
+        let student = new Student();
+        student._id = require('mongoose').Types.ObjectId(user._id);
         student.course_id = require('mongoose').Types.ObjectId(body.course_id);
-        student.user_id = user._id;
 
         return new Promise<boolean>(async (resolve) => {
+
            await user.save(async err => {
                if (err) {
                    console.log(err);
@@ -74,23 +86,6 @@ class UserController {
                    })
                }
            });
-        });
-    }
-
-    private static userDataSchema() :mongoose.Schema {
-        return new mongoose.Schema({
-            name: {type: mongoose.Schema.Types.String, required: true},
-            email: {type: mongoose.Schema.Types.String, required: true, unique: true},
-            password: {type: mongoose.Schema.Types.String, required: true},
-            registration: {type: mongoose.Schema.Types.String, required: true},
-            about: {type: mongoose.Schema.Types.String, required: false},
-            status: {type: mongoose.Schema.Types.Boolean, required: true},
-            links: [{
-                type: mongoose.Schema.Types.String, required: false
-            }],
-            publications: [{
-                type: mongoose.Schema.Types.ObjectId, ref: 'Publication'
-            }]
         });
     }
 }

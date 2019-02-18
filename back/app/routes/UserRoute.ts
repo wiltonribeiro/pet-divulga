@@ -7,46 +7,30 @@ import Error from '../models/ErrorCode';
 class UserRoute implements Route {
     applyRoute(app: e.Application): void {
 
+        //pegar usuario
         app.get('/user', (req, res) =>{
-            //TODO
-            res.send(authController.generateToken());
+
         });
 
         app.post('/user/login/:type', async (req, res) =>{
-
-            // let token = req.headers.authorization;
-            // let isValid :boolean = await authController.isValidToken(token);
-
-            // if(isValid){
-                try{
-                    let result = await  UserController.loginUser(req.params.type, req.body);
-                    res.send(result);
-                }catch (e) {
-                    if(e instanceof Error){
-                        res.sendStatus(e.code);
-                    } else res.sendStatus(500);
-                }
-            // } else {
-            //     res.sendStatus(403);
-            // }
-
+            try{
+                let result = await  UserController.loginUser(req.params.type, req.body);
+                result.token =  authController.generateToken();
+                res.send(result);
+            }catch (e) {
+                res.status(e.code).send({"message":e.message});
+            }
         });
 
         app.post('/user/register/:type', async (req, res) => {
-
-            let token = req.headers.authorization;
-            let isValid :boolean = await authController.isValidToken(token);
-
             try{
-                if(!isValid) res.sendStatus(403);
-                else{
-                    await UserController.registerUser(req.params.type, req.body);
-                    res.sendStatus(200);
-                }
+                await UserController.registerUser(req.params.type, req.body);
+                res.sendStatus(200);
             }catch (e) {
-                if(e instanceof Error){
-                    res.sendStatus(e.code);
-                } else res.sendStatus(500);
+                if(e instanceof Error)
+                    res.status(e.code).send({"message":e.message});
+                else
+                    res.sendStatus(500);
             }
         });
 
