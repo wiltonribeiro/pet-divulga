@@ -6,15 +6,11 @@ class CourseController {
 
     async getCourse() : Promise<ICourse>{
 
-        let result :boolean = await database.connect();
-        if(!result) throw new Error(500,"Falha ao conectar-se com o banco de dados");
-
         return new Promise<any>((res, rej) => {
             Course.find( async (err, data : ICourse) => {
                 if(err){
                     rej(new Error(500, err));
                 } else{
-                    await database.disconnect();
                     res(data);
                 }
             });
@@ -22,10 +18,6 @@ class CourseController {
     }
 
     async saveCourse(body: any) : Promise<boolean>{
-
-        let result :boolean = await database.connect();
-        if(!result) throw new Error(500,"Falha ao conectar-se com o banco de dados");
-
         return new Promise<boolean>(async (res, rej)=>{
 
             await new Course(body).save(async err => {
@@ -33,7 +25,6 @@ class CourseController {
                     rej(new Error(500, err));
                 }
                 else{
-                    await database.disconnect();
                     res(true);
                 }
             });

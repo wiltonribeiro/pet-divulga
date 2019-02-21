@@ -1,93 +1,117 @@
-import User, {IUser} from "../models/User";
-import Student, {IStudent} from "../models/Student";
-import Database from "../config/Database";
+import {IUser} from "../models/User";
+import userRepository from "../repository/UserRepository";
 import Error from '../models/ErrorCode';
-class UserController {
+import Auth from "../core/Auth";
+import {Request, Response} from "express";
 
-    async registerUser(type : String, body :any) : Promise<boolean>{
 
-        let result :boolean = await Database.connect();
-        if (!result)  throw new Error(500,"Falha ao conectar-se com o banco de dados");
+export default class UserController {
+
+    async registerUser(req: Request, res: Response){
+
+        let type = req.params.type;
+        let body = req.body;
 
         switch (type){
             case "student":{
-                let result = await this.registerStudent(body);
-                await Database.disconnect();
-                return result;
+
+                let user_id = await userRepository.registerUser(body).catch(err => {
+                    let e = err as Error;
+                    res.status(e.code).send(e.message);
+                });
+
+                userRepository.registerStudent(body, user_id).then(() => {
+                    res.send(200);
+                }).catch((err) =>{
+                    let e = err as Error;
+                    res.status(e.code).send(e.message);
+                });
+
+                break;
             }
             default:{
-                throw new Error(400,"Tipo de usuário inexistente");
+                let e = new Error(400,"Tipo de usuário inexistente");
+                res.status(e.code).send(e.message);
             }
         }
     }
 
-    async loginUser(type : String, body :any) : Promise<any>{
+    async getUserByTypeAndId(req: Request, res: Response){
 
-        let result :boolean = await Database.connect();
-        if (!result)  throw new Error(500,"Falha ao conectar-se com o banco de dados");
+        let type = req.params.type;
+        let userTypeData : any;
+        let uid = req.params.uid;
 
-        let email = body.email;
-        let password = body.password;
-
-        return new Promise<any>((resolve, reject) => {
-
-            User.findOne({email: email, password: password}).lean().exec(async (err, userData) => {
-
-                let json :any = null;
-
-                if(userData == null || err) reject(new Error(401, "Usuário não encontrado"));
-                else {
-                    switch (type){
-                        case "student":{
-                            let studentData = await this.loginStudent(userData._id).catch(err1 => reject(err1));
-                            json = Object.assign({},userData,studentData);
-                            break;
-                        }
-                        default:{
-                            reject(new Error(400,"Tipo de usuário inexistente"));
-                        }
-                    }
-                    await Database.disconnect();
-                    resolve(json);
-                }
-            });
+        let userData = await userRepository.getUser(uid).catch(err => {
+            let e = err as Error;
+            res.status(e.code).send(e.message);
         });
+
+        switch (type){
+            case "student":{
+                userTypeData = await userRepository.getStudent((userData as IUser)._id).catch((err) => {
+                    let e = err as Error;
+                    res.status(e.code).send(e.message);
+                });
+                break;
+            }
+            case "advisor":{
+                //TODO
+                break;
+            }
+            default:{
+                let e = new Error(400,"Tipo de usuário inexistente");
+                res.status(e.code).send(e.message);
+            }
+        }
+
+        let json : any = Object.assign({},userData,userTypeData);
+        res.send(json);
+
     }
 
-    private async loginStudent(_id: any) : Promise<IUser> {
-        return new Promise<any>( (resolve, reject) => {
-            Student.findById(_id).populate('course_id').lean().exec((_, studentData) => {
-                if(studentData == null) reject(new Error(401, 'Tipo de usuário inconssitente ao solicitado'));
-                resolve(studentData);
-            });
+    async loginUser(req: Request, res: Response){
+
+        let type = req.params.type;
+        let email = req.body.email;
+        let password = req.body.password;
+
+        let userTypeData : any;
+        let userData = await userRepository.loginUser(email, password).catch((err) => {
+            let e = err as Error;
+            res.status(e.code).send(e.message);
         });
+
+        switch (type){
+            case "student":{
+                userTypeData = await userRepository.getStudent((userData as IUser)._id).catch((err) => {
+                    let e = err as Error;
+                    res.status(e.code).send(e.message);
+                });
+                break;
+            }
+            case "professor":{
+                //TODO
+                break;
+            }
+            default:{
+                let e = new Error(400,"Tipo de usuário inexistente");
+                res.status(e.code).send(e.message);
+            }
+        }
+
+        let json : any = Object.assign({},userData,userTypeData);
+        json.token = new Auth().generateToken();
+        res.send(json);
     }
 
-    private registerStudent(body :any) : Promise<boolean> {
-        let user = new User(body);
-
-        let student = new Student();
-        student._id = require('mongoose').Types.ObjectId(user._id);
-        student.course_id = require('mongoose').Types.ObjectId(body.course_id);
-
-        return new Promise<boolean>(async (resolve) => {
-
-           await user.save(async err => {
-               if (err) {
-                   console.log(err);
-                   resolve(false);
-               } else {
-                   await student.save(err1 => {
-                       if(err1) {
-                           console.log(err1);
-                           resolve(false);
-                       } else
-                           resolve(true);
-                   })
-               }
-           });
+    async getUserById(req: Request, res: Response){
+        let uid = req.params.uid;
+        let user = await userRepository.getUser(uid).catch((err) => {
+            let e = err as Error;
+            res.status(e.code).send(e.message);
         });
+        res.send(user);
     }
+
 }
-
-export default new UserController();

@@ -1,42 +1,22 @@
 import Route from "../models/Route";
-import authController from "../controllers/AuthController";
 import e = require("express");
 import UserController from '../controllers/UserController';
-import Error from '../models/ErrorCode';
 
 class UserRoute implements Route {
+
+
     applyRoute(app: e.Application): void {
 
-        //pegar usuario
-        app.get('/user', (req, res) =>{
+        let userController = new UserController();
 
-        });
+        app.post('/user/login/:type', userController.loginUser);
 
-        app.post('/user/login/:type', async (req, res) =>{
-            try{
-                let result = await  UserController.loginUser(req.params.type, req.body);
-                result.token =  authController.generateToken();
-                res.send(result);
-            }catch (e) {
-                res.status(e.code).send({"message":e.message});
-            }
-        });
+        app.post('/user/register/:type', userController.registerUser);
 
-        app.post('/user/register/:type', async (req, res) => {
-            try{
-                await UserController.registerUser(req.params.type, req.body);
-                res.sendStatus(200);
-            }catch (e) {
-                if(e instanceof Error)
-                    res.status(e.code).send({"message":e.message});
-                else
-                    res.sendStatus(500);
-            }
-        });
+        app.get('/user/:uid', userController.getUserById);
 
-        app.post('user/delete/:userId', (req, res) =>{
-            //TODO
-        });
+        app.get('/user/:uid/:type', userController.getUserByTypeAndId);
+
     }
 }
 

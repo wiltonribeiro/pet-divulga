@@ -1,7 +1,7 @@
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
 
-class AuthController {
+export default class Auth {
 
     key : string;
 
@@ -10,7 +10,7 @@ class AuthController {
     }
 
     generateToken(): string {
-        return jwt.sign({"some":"thing"}, this.key, this.jwtOptions());
+        return jwt.sign({"some":"thing"}, this.key, Auth.jwtOptions());
     }
 
     isValidToken(token : string | undefined) : Promise<boolean> {
@@ -27,12 +27,10 @@ class AuthController {
         });
     }
 
-    private jwtOptions() {
+    private static jwtOptions() {
         return {
             algorithm:  "HS256"
         };
     }
 
 }
-
-export default new AuthController();

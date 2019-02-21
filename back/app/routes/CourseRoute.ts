@@ -1,7 +1,7 @@
 import Route from "../models/Route";
 import courseController from "../controllers/CourseController";
 import e = require("express");
-import authController from "../controllers/AuthController";
+import Auth from "../core/Auth";
 
 class CourseRoute implements Route{
 
@@ -10,7 +10,7 @@ class CourseRoute implements Route{
         app.get('/course', async (req, res) => {
 
             let token = req.headers.authorization;
-            let isValid :boolean = await authController.isValidToken(token);
+            let isValid :boolean = await new Auth().isValidToken(token);
 
             if(isValid){
                 try {
@@ -27,7 +27,7 @@ class CourseRoute implements Route{
         app.post('/course', async (req, res) => {
 
             let token = req.headers.authorization;
-            let isValid :boolean = await authController.isValidToken(token);
+            let isValid :boolean = await new Auth().isValidToken(token);
 
             if(isValid) {
                 try{

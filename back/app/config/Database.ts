@@ -1,26 +1,16 @@
 import mongoose = require('mongoose');
+import Error from '../models/ErrorCode';
 import env from './environment';
 
-class Database {
+export default class Database {
 
-    connect() : Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            mongoose.connect(env.db.url, { useNewUrlParser: true });
-            let db = mongoose.connection;
-            db.on("error", ()=> reject(false));
-            db.on("connected", () => resolve(true));
-
-        })
-    }
-
-    disconnect() : Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            mongoose.disconnect(err => {
-                if (err) reject(false);
-                else resolve(true);
-            })
+    async connect() : Promise<any> {
+        await mongoose.connect(env.db.url, { useNewUrlParser: true }).then(()=>{
+            mongoose.connection.on("error", ()=> {throw new Error(500, "Erro")});
         });
     }
-}
 
-export default new Database();
+    async disconnect() : Promise<any> {
+        await mongoose.disconnect();
+    }
+}
