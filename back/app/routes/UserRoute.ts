@@ -1,13 +1,11 @@
 import Route from "../models/Route";
 import e = require("express");
-import UserController from '../controllers/UserController';
+import userController from '../controllers/UserController';
 
 class UserRoute implements Route {
 
 
     applyRoute(app: e.Application): void {
-
-        let userController = new UserController();
 
         app.post('/user/login/:type', userController.loginUser);
 

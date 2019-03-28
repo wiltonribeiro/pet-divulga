@@ -1,34 +1,42 @@
-import Course, {ICourse} from "../models/Course";
-import database from "../config/Database";
-import Error from "../models/ErrorCode";
+import {Request, Response} from "express";
+import Auth from "../core/Auth";
+import courseRepository from "../repository/CourseRepository";
 
 class CourseController {
 
-    async getCourse() : Promise<ICourse>{
+    async getCourse(req: Request, res: Response) {
 
-        return new Promise<any>((res, rej) => {
-            Course.find( async (err, data : ICourse) => {
-                if(err){
-                    rej(new Error(500, err));
-                } else{
-                    res(data);
-                }
-            });
-        });
+        let token = req.headers.authorization;
+        let isValid :boolean = await new Auth().isValidToken(token);
+
+        if(isValid){
+            try {
+                let data = await courseRepository.getCourse();
+                res.send(data);
+            }catch (e) {
+                res.status(e.code).send({"message":e.message});
+            }
+        } else
+            res.sendStatus(403);
+
     }
 
-    async saveCourse(body: any) : Promise<boolean>{
-        return new Promise<boolean>(async (res, rej)=>{
+    async saveCourse(req: Request, res: Response){
 
-            await new Course(body).save(async err => {
-                if(err){
-                    rej(new Error(500, err));
-                }
-                else{
-                    res(true);
-                }
-            });
-        })
+        let token = req.headers.authorization;
+        let isValid :boolean = await new Auth().isValidToken(token);
+
+        if(isValid) {
+
+            try{
+                await courseRepository.saveCourse(req.body);
+                res.sendStatus(200);
+            }catch (e) {
+                res.status(e.code ? e.code : 500).send({"message":e.message});
+            }
+
+        } else
+            res.sendStatus(403);
     }
 }
 

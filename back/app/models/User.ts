@@ -6,6 +6,7 @@ export interface IUser extends mongoose.Document {
 
 export const UserSchema = new mongoose.Schema({
     url_image : {type: mongoose.Schema.Types.String},
+    type : {type: mongoose.Schema.Types.String, required: true},
     username: {type: mongoose.Schema.Types.String, required: true, unique: true},
     name: {type: mongoose.Schema.Types.String, required: true},
     email: {type: mongoose.Schema.Types.String, required: true, unique: true},

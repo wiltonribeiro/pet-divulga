@@ -5,7 +5,7 @@ import Auth from "../core/Auth";
 import {Request, Response} from "express";
 
 
-export default class UserController {
+class UserController {
 
     async registerUser(req: Request, res: Response){
 
@@ -29,6 +29,24 @@ export default class UserController {
 
                 break;
             }
+
+            case "advisor":{
+
+                let user_id = await userRepository.registerUser(body).catch(err => {
+                    let e = err as Error;
+                    res.status(e.code).send(e.message);
+                });
+
+                userRepository.registerStudent(body, user_id).then(() => {
+                    res.send(200);
+                }).catch((err) =>{
+                    let e = err as Error;
+                    res.status(e.code).send(e.message);
+                });
+
+                break;
+            }
+
             default:{
                 let e = new Error(400,"Tipo de usuário inexistente");
                 res.status(e.code).send(e.message);
@@ -56,7 +74,10 @@ export default class UserController {
                 break;
             }
             case "advisor":{
-                //TODO
+                userTypeData = await userRepository.getStudent((userData as IUser)._id).catch((err) => {
+                    let e = err as Error;
+                    res.status(e.code).send(e.message);
+                });
                 break;
             }
             default:{
@@ -90,8 +111,11 @@ export default class UserController {
                 });
                 break;
             }
-            case "professor":{
-                //TODO
+            case "advisor":{
+                userTypeData = await userRepository.getAdvisor((userData as IUser)._id).catch((err) => {
+                    let e = err as Error;
+                    res.status(e.code).send(e.message);
+                });
                 break;
             }
             default:{
@@ -100,7 +124,7 @@ export default class UserController {
             }
         }
 
-        let json : any = Object.assign({},userData,userTypeData);
+        let json : any = Object.assign({}, userData, userTypeData);
         json.token = new Auth().generateToken();
         res.send(json);
     }
@@ -115,3 +139,5 @@ export default class UserController {
     }
 
 }
+
+export default new UserController();

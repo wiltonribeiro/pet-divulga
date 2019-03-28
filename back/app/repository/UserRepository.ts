@@ -2,6 +2,7 @@ import Error from "../models/ErrorCode";
 import User, {IUser} from "../models/User";
 import {IStudent} from "../models/Student";
 import Student from "../models/Student";
+import Advisor, {IAdvisor} from "../models/Advisor";
 
 class UserRepository {
 
@@ -44,6 +45,19 @@ class UserRepository {
         });
     }
 
+    async getAdvisor(uid :string) : Promise<IAdvisor> {
+        return new Promise<any>(async (resolve, reject) => {
+            await Advisor.findById(uid).lean().exec((err, advisorData : IAdvisor) => {
+                if(advisorData == null)
+                    reject(new Error(401, 'Tipo de usuário inconssitente ao solicitado'));
+                else if(err)
+                    reject(new Error(500, err));
+                else
+                    resolve(advisorData);
+            });
+        });
+    }
+
     async registerUser(content : any) : Promise<any> {
         let user = new User(content);
 
@@ -66,6 +80,21 @@ class UserRepository {
 
         return new Promise<boolean>(async (resolve, reject) => {
             await student.save(err => {
+                if(err) {
+                    reject(new Error(500, err));
+                } else
+                    resolve(true);
+            });
+        });
+    }
+
+    async registerAdvisor(content : any, uid_user : string) : Promise<boolean> {
+        let advisor = new Advisor();
+        advisor._id = require('mongoose').Types.ObjectId(uid_user);
+        advisor.advisor_type = content.advisor_type;
+
+        return new Promise<boolean>(async (resolve, reject) => {
+            await advisor.save(err => {
                 if(err) {
                     reject(new Error(500, err));
                 } else
